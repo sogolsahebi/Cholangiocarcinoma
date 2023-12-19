@@ -1,6 +1,6 @@
 # Format_downloaded_data.R
 # This script formats and prepares three files:
-# - Creates "CLIN.txt"(dimension clinical).
+# - Creates "CLIN.txt"(dimension is 33-11).
 # - Creates "expr_tpm.txt.gz" based on TPM data(dimension is 60591-9).
 # - Creates "expr_fpkm.txt.gz" based on FPKM data(dimension is 60591-9).
 
