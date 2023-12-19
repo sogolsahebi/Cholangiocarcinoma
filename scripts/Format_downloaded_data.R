@@ -92,13 +92,13 @@ gz_tpm <- gzfile(file.path(output_dir, 'expr_tpm.txt.gz'), "w")
 write.table(expr_tpm, file = gz_tpm, quote = FALSE, sep = "\t", col.names = TRUE, row.names = FALSE)
 close(gz_tpm)
 
-#path_tpm <- "~/BHK lab/kevin Project/Cholangiocarcinoma/files/EXPR_TPM.csv"
-#write.csv(expr_tpm, path_tpm, row.names = TRUE)
+#Save as csv too.
+#write.csv(expr_tpm, paste0(output_dir, "EXPR_TPM.csv"), row.names = TRUE)
 
 # Save expr_fpkm as "expr_fpkm.txt.gz".
 gz_fpkm <- gzfile(file.path(output_dir, 'expr_fpkm.txt.gz'), "w")
 write.table(expr_fpkm, file = gz_fpkm, quote = FALSE, sep = "\t", col.names = TRUE, row.names = FALSE)
 close(gz_fpkm)
 
-#path_fpkm <- "~/BHK lab/kevin Project/Cholangiocarcinoma/files/EXPR_FPKM.csv"
-#write.csv(expr_fpkm, path_fpkm, row.names = TRUE)
+#Save as csv too.
+#write.csv(expr_tpm, paste0(output_dir, "EXPR_FPKM.csv"), row.names = TRUE)
