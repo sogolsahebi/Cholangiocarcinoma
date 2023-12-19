@@ -1,79 +1,104 @@
-# Format_downloaded_data.R.
+# Format_downloaded_data.R
+# This script formats and prepares three files:
+# - Creates "CLIN.txt"(dimension clinical).
+# - Creates "expr_tpm.txt.gz" based on TPM data(dimension is 60591-9).
+# - Creates "expr_fpkm.txt.gz" based on FPKM data(dimension is 60591-9).
 
-# This script formats and Prepare three files.
-# - Creates "CLIN.txt".
-# - Creates "EXPR_TPM.txt.gz"  based on TPM data.
-# - Creates "EXPR_FPKM.txt.gz" based on FPMK data.
-
-
-
-#Define a input_dir where all files exists.
+# Define an input directory where all files exist
 input_dir <- "~/BHK lab/kevin Project/Cholangiocarcinoma/cca_subset/"
+output_dir <- "~/BHK lab/kevin Project/Cholangiocarcinoma/files/"
 
-#1. CLIN.txt
-#Read the meta_data,csv as set it as clinical data.
-clinical <- read.csv(paste0(input_dir, "meta_data.csv"), stringsAsFactors = FALSE) #dimension  33-11
+# Read the clinical data from the meta_data.csv file.
+clinical <- read.csv(paste0(input_dir, "meta_data.csv"), stringsAsFactors = FALSE)
 
-#TODO: save the ClIN.txt file.
+# Save clinical data as CLIN.txt
+write.table(clinical, file = file.path(output_dir, 'CLIN.txt'), quote = FALSE, sep = "\t", col.names = TRUE, row.names = FALSE)
 
-#2. Preparing for EXPR_TPM file. 
+# List of all sample file names
+sample_files <- c(
+  "BTC_0004_Lv_M_526_stringtie_abundance.txt", 
+  "BTC_0009_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0010_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0011_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0012_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0013_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0014_Lv_M_526_stringtie_abundance.txt",
+  "BTC_0015_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0016_Lv_M_526_stringtie_abundance.txt",
+  "BTC_0017_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0018_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0019_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0020_Ab_M_526_stringtie_abundance.txt",
+  "BTC_0022_Lv_M_526_stringtie_abundance.txt",
+  "BTC_0023_Lv_M_526_stringtie_abundance.txt",
+  "BTC_0024_Lv_M_526_stringtie_abundance.txt",
+  "BTC_0025_Sn_M_526_stringtie_abundance.txt",
+  "BTC_0026_Lv_M_526_stringtie_abundance.txt",
+  "BTC_0028_Lv_M_526_stringtie_abundance.txt",
+  "BTC_0029_Lv_M_526_stringtie_abundance.txt",
+  "BTC_0030_Lv_M_526_stringtie_abundance.txt",
+  "BTC_0032_Lv_M_526_stringtie_abundance.txt",
+  "BTC_0033_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0034_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0035_Lv_M_526_stringtie_abundance.txt",
+  "BTC_0036_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0037_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0038_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0039_Lv_M_526_stringtie_abundance.txt",
+  "BTC_0040_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0042_Lv_P_526_stringtie_abundance.txt",
+  "BTC_0045_Lv_P_526_stringtie_abundance.txt",
+  "BTC_8002_Lv_M_526_stringtie_abundance.txt"
+)
 
-#TODO: reading all --33?-- files. 
+# Function to process each file
+process_file <- function(file_name, input_dir, unique_Genename) {
+  file_path <- paste0(input_dir, file_name)
+  data <- read.csv(file_path, stringsAsFactors = FALSE, sep = "\t")
+  data <- data[order(data$Gene.Name), ]
+  data <- data[!duplicated(data$Gene.Name), ] # Removed 35 duplicate Gene.Names.
+  
+  # Check if all 'Gene.Name' values are equal to 'unique_Genename'
+  if (!all(data$Gene.Name == unique_Genename)) {
+    stop("Gene names in ", file_name, " do not match the unique gene names.")
+  }
+  
+  return(data)
+}
 
-#1 BTC_0004 sample with dimention 60626- 9
-BTC_0004 <- read.csv(paste0(input_dir, "BTC_0004_Lv_M_526_stringtie_abundance.txt"), stringsAsFactors = FALSE, sep = "\t")
+# Read the first file to get the unique gene names
+first_file_path <- paste0(input_dir, sample_files[1])
+first_file_data <- read.csv(first_file_path, stringsAsFactors = FALSE, sep = "\t")
+unique_Genename <- sort(unique(first_file_data$Gene.Name))
 
-#remove the duplication Gene.Name, keeping the first occurrence
+# Initialize the expr_tpm and expr_fpkm data frames
+expr_tpm <- data.frame(matrix(NA, nrow = length(unique_Genename), ncol = length(clinical$id),
+                              dimnames = list(unique_Genename, clinical$id)))
 
-sum(duplicated(BTC_0004$Gene.Name)) #35 duplicate Gene.Names
+expr_fpkm <- data.frame(matrix(NA, nrow = length(unique_Genename), ncol = length(clinical$id),
+                               dimnames = list(unique_Genename, clinical$id)))
 
-BTC_0004 <- BTC_0004[!duplicated(BTC_0004$Gene.Name), ] #now dimension is 60591-9
+# Process each file and add it to the expr_tpm and expr_fpkm data frames
+for (file_name in sample_files) {
+  sample_data <- process_file(file_name, input_dir, unique_Genename)
+  # extract the sample identifier from the file name eg. "BTC_xxxx"
+  sample_id <- sub("^(BTC_\\d{4}).*$", "\\1", file_name)
+  expr_tpm[[sample_id]] <- sample_data$TPM
+  expr_fpkm[[sample_id]] <- sample_data$FPKM
+}
 
-#Store The Gene.Names and set it as rownames of the data.table for EXPM_TPM.
-unique_Genename <- BTC_0004$Gene.Name
+# Save expr_tpm as "expr_tpm.txt.gz".
+gz_tpm <- gzfile(file.path(output_dir, 'expr_tpm.txt.gz'), "w")
+write.table(expr_tpm, file = gz_tpm, quote = FALSE, sep = "\t", col.names = TRUE, row.names = FALSE)
+close(gz_tpm)
 
-#Create a data.table with Row names of Gene.Name and columnnames of out clinical id.
-# Create the empty data frame with specified row and column names #60591- 33
-EXPR_TPM <- data.frame(matrix(NA, nrow = length(BTC_0004$Gene.Name), ncol = length(clinical$id), 
-                              dimnames = list(BTC_0004$Gene.Name, clinical$id))) 
+#path_tpm <- "~/BHK lab/kevin Project/Cholangiocarcinoma/files/EXPR_TPM.csv"
+#write.csv(expr_tpm, path_tpm, row.names = TRUE)
 
-#Set BTC_0004 clomuns of EXPR_TPM.
-EXPR_TPM$BTC_0004 <- BTC_0004$TPM 
+# Save expr_fpkm as "expr_fpkm.txt.gz".
+gz_fpkm <- gzfile(file.path(output_dir, 'expr_fpkm.txt.gz'), "w")
+write.table(expr_fpkm, file = gz_fpkm, quote = FALSE, sep = "\t", col.names = TRUE, row.names = FALSE)
+close(gz_fpkm)
 
-#Adding the Remining 32 files tpm data to EXPR_TPM file.
-#double check if we  have same Gene.names as BTC_0004 Gene.names("unique_Genename").
-BTC_0009 <- read.csv(paste0(input_dir, "BTC_0009_Lv_P_526_stringtie_abundance"), stringsAsFactors = FALSE, sep = "\t")
-
-
-BTC_0010_Lv_P_526_stringtie_abundance
-BTC_0011_Lv_P_526_stringtie_abundance
-BTC_0012_Lv_P_526_stringtie_abundance
-BTC_0013_Lv_P_526_stringtie_abundance
-BTC_0014_Lv_M_526_stringtie_abundance
-BTC_0015_Lv_P_526_stringtie_abundance
-BTC_0016_Lv_M_526_stringtie_abundance
-BTC_0017_Lv_P_526_stringtie_abundance
-BTC_0018_Lv_P_526_stringtie_abundance
-BTC_0019_Lv_P_526_stringtie_abundance
-BTC_0020_Ab_M_526_stringtie_abundance
-BTC_0022_Lv_M_526_stringtie_abundance
-BTC_0023_Lv_M_526_stringtie_abundance
-BTC_0024_Lv_M_526_stringtie_abundance
-BTC_0025_Sn_M_526_stringtie_abundance
-BTC_0026_Lv_M_526_stringtie_abundance
-BTC_0028_Lv_M_526_stringtie_abundance
-BTC_0029_Lv_M_526_stringtie_abundance
-BTC_0030_Lv_M_526_stringtie_abundance
-BTC_0032_Lv_M_526_stringtie_abundance
-BTC_0033_Lv_P_526_stringtie_abundance
-BTC_0034_Lv_P_526_stringtie_abundance
-BTC_0035_Lv_M_526_stringtie_abundance
-BTC_0036_Lv_P_526_stringtie_abundance
-BTC_0037_Lv_P_526_stringtie_abundance
-BTC_0038_Lv_P_526_stringtie_abundance
-BTC_0039_Lv_M_526_stringtie_abundance
-BTC_0040_Lv_P_526_stringtie_abundance
-BTC_0042_Lv_P_526_stringtie_abundance
-BTC_0045_Lv_P_526_stringtie_abundance
-BTC_8002_Lv_M_526_stringtie_abundance
-
+#path_fpkm <- "~/BHK lab/kevin Project/Cholangiocarcinoma/files/EXPR_FPKM.csv"
+#write.csv(expr_fpkm, path_fpkm, row.names = TRUE)
