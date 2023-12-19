@@ -45,9 +45,7 @@ process_file <- function(unique_file_name, input_dir, unique_Genename) {
 }
 
 # Read the first file to get the unique gene names
-#first_file_path <- paste0(input_dir, sample_files[1]) #path to BTC_0004..txt file.
-
-first_file_path <- paste0(input_dir, sample_files[1], "526_stringtie_abundance.txt")
+first_file_path <- paste0(input_dir, sample_files[1], "526_stringtie_abundance.txt") #path to BTC_0004..txt file.
 first_file_data <- read.csv(first_file_path, stringsAsFactors = FALSE, sep = "\t")
 unique_Genename <- sort(unique(first_file_data$Gene.Name))
 
