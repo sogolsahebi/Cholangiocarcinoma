@@ -63,8 +63,8 @@ assay_list <- list()
 assay_list[["expr_tpm"]] <- assay
 
 # Create SE object
-SE_expr_tpm <- SummarizedExperiment(assays = assay_list, colData = clin, rowRanges = row_ranges)
+SE_CCA <- SummarizedExperiment(assays = assay_list, colData = clin, rowRanges = row_ranges)
 
 #Save the SE experiment ac rds file..
-saveRDS(SE_expr_tpm, paste0(directory, "data/SE_expr_tpm.rds"))
+saveRDS(SE_expr_tpm, paste0(directory, "data/SE_CCA.rds"))
 
