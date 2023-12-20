@@ -65,18 +65,15 @@ for (file_name in sample_files) {
   expr_fpkm[[sample_id]] <- sample_data$FPKM
 }
 
-# Save expr_tpm as "expr_tpm.txt.gz".
-gz_tpm <- gzfile(file.path(output_dir, 'expr_tpm.txt.gz'), "w")
-write.table(expr_tpm, file = gz_tpm, quote = FALSE, sep = "\t", col.names = TRUE, row.names = FALSE)
+# Save expr_tpm as "EXPR_TPM.txt.gz".
+gz_tpm <- gzfile(file.path(output_dir, 'EXPR_TPM.txt.gz'), "w")
+write.table(expr_tpm, file = gz_tpm, sep = "\t", row.names = TRUE, quote = FALSE)
 close(gz_tpm)
 
-#Save as csv too.
-#write.csv(expr_tpm, paste0(output_dir, "EXPR_TPM.csv"), row.names = TRUE)
 
-# Save expr_fpkm as "expr_fpkm.txt.gz".
-gz_fpkm <- gzfile(file.path(output_dir, 'expr_fpkm.txt.gz'), "w")
-write.table(expr_fpkm, file = gz_fpkm, quote = FALSE, sep = "\t", col.names = TRUE, row.names = FALSE)
+# Save expr_fpkm as "EXPR_FPKM.txt.gz".
+gz_fpkm <- gzfile(file.path(output_dir, 'EXPR_FPKM.txt.gz'), "w")
+write.table(expr_fpkm, file = gz_fpkm, sep = "\t", row.names = TRUE, quote = FALSE)
 close(gz_fpkm)
 
-#Save as csv too.
-#write.csv(expr_tpm, paste0(output_dir, "EXPR_FPKM.csv"), row.names = TRUE)
+
