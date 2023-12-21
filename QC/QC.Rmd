@@ -66,7 +66,7 @@ DT::datatable(expr_tpm[1:8, 1:8])
 Preparing expression data (RNA-seq) for analysis:
 
 1. **Restrict expression data to protein-coding genes.**
-2. **Remove low/zero expression genes.**"
+2. **Remove low/zero expression genes.**
 
 
 ```{r Data Preparation }
@@ -94,12 +94,13 @@ DT::datatable(expr_tpm[1:8, 1:8])
 
 # Descriptive analysis
 
-Evaluate Differences in Clinicodemographic and Staging Variables
+## Evaluate Differences in Clinicodemographic and Staging Variables
 
-- For continuous variables (e.g., age), we calculated the median and IQR and assessed associations using the Wilcoxon test.
+- **Continuous Variables (e.g., Age):** We calculated the median and IQR and assessed associations using the Wilcoxon test. 
+  - _Reason:_ The Wilcoxon test is used because it's non-parametric and effective for data not normally distributed.
 
-- For discrete/categorical variables (e.g., sex, stage), we determined frequency and percentage distributions and assessed associations using the Chi-squared or Fisher exact test.
-
+- **Discrete/Categorical Variables (e.g., Sex, Stage, Location):** We determined frequency and percentage distributions and assessed associations using Fisher's exact test.
+  - _Reason:_ Fisher's exact test is preferred over chi-squared in small samples because it's more accurate with low frequencies (less than 5).
 
 
 ```{r Descriptive analysis}
@@ -134,41 +135,61 @@ ggplot(clin, aes(x = psc_ibd, y = age, color = psc_ibd)) +
 
 # Perform two-sample Wilcoxon test
 res <- wilcox.test(age ~ psc_ibd, data = clin, exact = FALSE)
-p_value_age <- res$p.value
+p_value_age <- round(res$p.value, 2)
 
 # 2. Sex
 
 # Perform Fisher's Exact Test for 'sex' and 'psc_ibd'
 contingency_sex <- table(clin$sex, clin$psc_ibd)
-p_value_sex <- fisher.test(contingency_sex)$p.value
+p_value_sex <- round(fisher.test(contingency_sex)$p.value,2)
 
 # Calculate and format percentages for Sex
 sex_stats <- apply(contingency_sex, 2, function(x) sprintf("%d (%.1f%%)", x, 100 * x / sum(x)))
 
 # Perform Fisher's Exact Test for 'location' and 'psc_ibd'
 contingency_loc <- table(clin$location, clin$psc_ibd)
-p_value_loc <- fisher.test(contingency_loc)$p.value
+p_value_loc <- round(fisher.test(contingency_loc)$p.value, 2)
 
 # Calculate and format percentages for Location
 location_stats <- apply(contingency_loc, 2, function(x) sprintf("%d (%.1f%%)", x, 100 * x / sum(x)))
 
 # Perform Fisher's Exact Test for 'stage' and 'psc_ibd'
+# TODO: Convert "IIIA", "IIIB", "IIIC" to "IIIA and convert "IVA", "IVB" to "IV".
 clin$stage <- with(clin, ifelse(stage %in% c("IIIA", "IIIB", "IIIC"), "III",
                                 ifelse(stage %in% c("IVA", "IVB"), "IV", stage)))
 
 contingency_stage <- table(clin$stage, clin$psc_ibd)
-p_value_stage <- fisher.test(contingency_stage)$p.value
+p_value_stage <- round(fisher.test(contingency_stage)$p.value, 2)
+
 
 # Calculate and format percentages for Stage
 stage_stats <- apply(contingency_stage, 2, function(x) sprintf("%d (%.1f%%)", x, 100 * x / sum(x)))
 
+
 # Combine all statistics into a data frame for the table
+# Assuming summary_stats, sex_stats, location_stats, stage_stats, and p_values are already defined
+
 result <- data.frame(
-  Characteristics = c("Age", "Mean (SD)", "Median (IQR)", "Min, Max", "", "Sex", "F", "M", "", "Location", "dCCA", "GBC", "iCCA", "pCCA", "", "Stage", "II", "III", "IV"),
-  `Autoimmune (n=14)` = c("", summary_stats$Mean_SD[1], summary_stats$Median_IQR[1], summary_stats$Min_Max[1], "", "", sex_stats[1, 1], sex_stats[2, 1], "", "", location_stats[1, 1], location_stats[2, 1], location_stats[3, 1], location_stats[4, 1], "", "", stage_stats[1, 1], stage_stats[2, 1], stage_stats[3, 1]),
-  `Non-Autoimmune (n=19)` = c("", summary_stats$Mean_SD[2], summary_stats$Median_IQR[2], summary_stats$Min_Max[2], "", "", sex_stats[1, 2], sex_stats[2, 2], "", "", location_stats[1, 2], location_stats[2, 2], location_stats[3, 2], location_stats[4, 2], "", "", stage_stats[1, 2], stage_stats[2, 2], stage_stats[3, 2]),
-  `P value` = c(p_value_age, "", "", "", "", p_value_sex, "", "", "", p_value_loc, "", "", "", "", "", p_value_stage, "", "", "")
+  Characteristics = c("Age", "Mean (SD)", "Median (IQR)", "Min, Max", "",
+                      "Sex", "F", "M", "",
+                      "Location", "dCCA", "GBC", "iCCA", "pCCA", "",
+                      "Stage", "II", "III", "IV"),
+  `Autoimmune (n=14)` = c("", summary_stats$Mean_SD[1], summary_stats$Median_IQR[1], summary_stats$Min_Max[1], "",
+                          "", sex_stats[1, 1], sex_stats[2, 1], "",
+                          "", location_stats[1, 1], location_stats[2, 1], location_stats[3, 1], location_stats[4, 1], "",
+                          "", stage_stats[1, 1], stage_stats[2, 1], stage_stats[3, 1]),
+  `Non-Autoimmune (n=19)` = c("", summary_stats$Mean_SD[2], summary_stats$Median_IQR[2], summary_stats$Min_Max[2], "",
+                              "", sex_stats[1, 2], sex_stats[2, 2], "",
+                              "", location_stats[1, 2], location_stats[2, 2], location_stats[3, 2], location_stats[4, 2], "",
+                              "", stage_stats[1, 2], stage_stats[2, 2], stage_stats[3, 2]),
+  `P value` = c(p_value_age, "", "", "", "",
+                p_value_sex, "", "", "", p_value_loc,
+                "", "", "", "", "",
+                p_value_stage, "", "", ""),
+  check.names = FALSE
 )
+
+
 
 table_html <- kable(
     result, 
