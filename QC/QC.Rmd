@@ -234,21 +234,20 @@ fit <- lmFit(expr_tpm, design)
 # Perform eBayes analysis
 fit <- eBayes(fit)
 
+# Preview
 DT::datatable(topTable(fit))
 
-# Save fit data.table to Csvfile.
-directory  <- "~/BHK lab/kevin Project/Cholangiocarcinoma/"
-saveRDS(fit, paste0(directory, "data/Limma_Fit.csv"))
+# Write the data frame to a CSV file
+file_path <- "~/BHK lab/kevin Project/Cholangiocarcinoma/data/Limma_Fit.csv"
+write.csv(data.frame(RowNames = rownames(fit),fit), file_path, row.names = FALSE)
 
-# 
+
 # #2. Volcano plot.
-
 # Retrieve all results from the analysis
 volcano_data <- topTable(fit, number=Inf)
 
 
 # 2.1 Volcano Plot based on P value
-
 EnhancedVolcano(volcano_data,
     lab = rownames(volcano_data),
     x = 'logFC',
@@ -257,7 +256,6 @@ EnhancedVolcano(volcano_data,
     )
 
 # 2.2 Volcano Plot based on FDR
-
 EnhancedVolcano(volcano_data,
     lab = rownames(volcano_data),
     x = 'logFC',
