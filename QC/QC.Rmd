@@ -262,7 +262,7 @@ EnhancedVolcano(volcano_data,
     lab = rownames(volcano_data),
     x = 'logFC',
     y = 'adj.P.Val',
-    title= 'Volcano Plot based on P value')
+    title= 'Volcano Plot based on FDR')
  
 
 ```
