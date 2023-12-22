@@ -2,7 +2,6 @@
 # - Generates EXPR_TPM.csv with Log2(TPM+1)
 # - Creates SummarizedExperiment (SE) Object - annottation : used GENCODE 40 and 38040 genes was found.
 
-
 # Load Required Libraries
 library(data.table) 
 library(SummarizedExperiment)
@@ -12,7 +11,7 @@ library(GenomicRanges)
 directory <- "~/BHK lab/kevin Project/Cholangiocarcinoma/"
 
 # Read and Process Expression TPM Data
-expr_tpm_file <- paste0(directory, "files/EXPR_TPM.txt.gz")
+expr_tpm_file <- file.path(directory, "files/EXPR_TPM.txt.gz")
 expr_tpm <- fread(expr_tpm_file, sep = "\t", dec = ",", stringsAsFactors = FALSE)
 rownames_expr_tpm <- expr_tpm$V1
 expr_tpm <- expr_tpm[,-1]
