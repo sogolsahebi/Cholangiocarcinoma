@@ -23,6 +23,7 @@ library(knitr)
 library(DT)
 library(limma)
 library(EnhancedVolcano)
+library(tibble)
 
 ```
 
@@ -47,7 +48,7 @@ Load the Summarized Experiment .rds file (SE_CCA.rds), extract clinical and expr
 # Load your SE result and extract clinical data , expression data and annotation
 
 # Load SE obj
-se <- readRDS("~/BHK lab/kevin Project/Cholangiocarcinoma/data/SE_CCA.rds")
+se <- readRDS("~/BHK lab/kevin Project/Cholangiocarcinoma/output data/SE_CCA.rds")
 
 # Extract Clinical data 
 clin <- data.frame(colData(se)) #dim is 33 x 11
@@ -223,16 +224,16 @@ fit <- eBayes(fit)
 # Sort by Pvalue.
 top.table <- topTable(fit, sort.by = "P", n = Inf)
 
-# Preview
-DT::datatable(top.table)
-
 # To see How many DE gene are there.
 length(which(top.table$adj.P.Val < 0.05))  # 460 DE genes.
 
-# Save top table to .txt file.
-top.table$Gene <- rownames(top.table)
-write.table(top.table, file = "~/BHK lab/kevin Project/Cholangiocarcinoma/data/Limma_Fit.txt", row.names = F, sep = "\t", quote = F)
+# Preview
+DT::datatable(data.frame(round(data.frame(top.table),3)))
 
+# Save top table to .txt file.
+top.table <- add_column(top.table, Gene= rownames(top.table), .before= 1)
+top.table$Gene <- rownames(top.table)
+write.table(top.table, file = "~/BHK lab/kevin Project/Cholangiocarcinoma/output data/Limma_Fit.txt", row.names = F, sep = "\t", quote = F)
 
 ```
 
@@ -251,6 +252,10 @@ EnhancedVolcano(top.table,
     lab = rownames(top.table),
     x = 'logFC',
     y = 'P.Value',
+    pCutoff = 0.05,
+    FCcutoff = 1.5,
+    xlim = c(-5, 5),
+    ylim = c(0, -log10(10e-4)),
     title= 'Volcano Plot based on P value'
     )
 
@@ -263,9 +268,9 @@ EnhancedVolcano(top.table,
     pCutoff = 0.05,
     FCcutoff = 1.5,
     xlim = c(-5, 5),
+    ylim = c(0, -log10(10e-4)),
     legendLabels=c('Not sig.','Log FC','adj p-value',
       'adj p-value & Log FC'),
-    ylim = c(0, -log10(10e-4)),
     title= 'Volcano Plot based on FDR',)
 
 
