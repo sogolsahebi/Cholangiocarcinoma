@@ -23,7 +23,6 @@ library(knitr)
 library(DT)
 library(limma)
 library(EnhancedVolcano)
-library(tibble)
 
 ```
 
@@ -68,8 +67,8 @@ DT::datatable(round(expr_tpm[1:8, 1:8], 3)) # round to three digits for visualiz
 
 Preparing expression data (RNA-seq) for analysis:
 
-1. **Restrict expression data to protein-coding genes.**
-2. **Remove low/zero expression genes.**
+1. Restrict expression data to protein-coding genes.
+2. Remove low/zero expression genes.
 
 
 ```{r Data Preparation }
@@ -99,9 +98,9 @@ DT::datatable(round(expr_tpm[1:8, 1:8], 3))
 
 ## Evaluate Differences in Clinicodemographic and Staging Variables
 
-- **Continuous Variables (e.g., Age):** We calculated the median and IQR and assessed associations using the Wilcoxon test. 
+- **Continuous Variables (e.g., Age):** Calculated the median and IQR and assessed associations using the Wilcoxon test. 
 
-- **Discrete/Categorical Variables (e.g., Sex, Stage, Location):** We determined frequency and percentage distributions and assessed associations using Fisher's exact test.
+- **Discrete/Categorical Variables (e.g., Sex, Stage, Location):** Determined frequency and percentage distributions and assessed associations using Fisher's exact test.
 
 
 ```{r Descriptive analysis}
@@ -170,28 +169,25 @@ stage_stats <- apply(contingency_stage, 2, function(x) sprintf("%d (%.1f%%)", x,
 # Combine all statistics into a data frame for the table
 result <- data.frame(
   Characteristics = c("Age", "Mean (SD)", "Median (IQR)", "Min, Max", "",
-                      "Sex", "F", "M", "",
-                      "Location", "dCCA", "GBC", "iCCA", "pCCA", "",
-                      "Stage", "II", "III", "IV"),
+                      "Sex", "F", "M", "","Location", "dCCA", "GBC", "iCCA",
+                      "pCCA", "", "Stage", "II", "III", "IV"),
   
-  `Autoimmune (n=14)` = c("", summary_stats$Mean_SD[1], summary_stats$Median_IQR[1], summary_stats$Min_Max[1], "","",
-                          sex_stats[1, 1], sex_stats[2, 1], "", "", location_stats[1, 1], location_stats[2, 1],
-                          location_stats[3, 1], location_stats[4, 1],"","", stage_stats[1, 1], stage_stats[2, 1], 
-                          stage_stats[3, 1]),
+  `Autoimmune (n=14)` = c("", summary_stats$Mean_SD[1], summary_stats$Median_IQR[1], summary_stats$Min_Max[1],
+                          "","",sex_stats[1, 1], sex_stats[2, 1], "", "", location_stats[1, 1], 
+                          location_stats[2, 1], location_stats[3, 1], location_stats[4, 1],"","", 
+                          stage_stats[1, 1], stage_stats[2, 1], stage_stats[3, 1]),
   
-  `Non-Autoimmune (n=19)` = c("", summary_stats$Mean_SD[2], summary_stats$Median_IQR[2], summary_stats$Min_Max[2], "","",
-                              sex_stats[1, 2], sex_stats[2, 2], "", "", location_stats[1, 2], location_stats[2, 2],
-                              location_stats[3, 2], location_stats[4, 2],"","", stage_stats[1, 2], stage_stats[2, 2],
-                              stage_stats[3, 2]),
+  `Non-Autoimmune (n=19)` = c("", summary_stats$Mean_SD[2], summary_stats$Median_IQR[2],summary_stats$Min_Max[2],
+                              "","", sex_stats[1, 2], sex_stats[2, 2], "", "", location_stats[1, 2],
+                              location_stats[2, 2],location_stats[3, 2], location_stats[4, 2],"","",
+                              stage_stats[1, 2], stage_stats[2, 2],stage_stats[3, 2]),
   
   `P value` = c(p_value_age, "", "", "", "",
                 p_value_sex, "", "", "", p_value_loc,
-                "", "", "", "", "",
-                p_value_stage, "", "", ""),
+                "", "", "", "", "",p_value_stage, "", "", ""),
   
   check.names = FALSE
 )
-
 
 
 table_html <- kable(
@@ -210,8 +206,8 @@ table_html
 # Differential gene expression.
 
   - **Use limma approach in R **: To find the differentially expressed genes between Autoimmune and Non-Autoimmune.
-  - **P-values are corrected to control false discovery rate (FDR) using Benjamini-Hochberg approach **
-  - ** out put: Limma_Fit.txt file **
+  - **P-values are corrected to control false discovery rate (FDR)** using Benjamini-Hochberg approach 
+  - **out put:** Limma_Fit.txt file
   
 
 ```{r diff expression }
@@ -231,7 +227,6 @@ length(which(top.table$adj.P.Val < 0.05))  # 460 DE genes.
 DT::datatable(data.frame(round(data.frame(top.table),3)))
 
 # Save top table to .txt file.
-top.table <- add_column(top.table, Gene= rownames(top.table), .before= 1)
 top.table$Gene <- rownames(top.table)
 write.table(top.table, file = "~/BHK lab/kevin Project/Cholangiocarcinoma/output data/Limma_Fit.txt", row.names = F, sep = "\t", quote = F)
 
@@ -239,7 +234,7 @@ write.table(top.table, file = "~/BHK lab/kevin Project/Cholangiocarcinoma/output
 
 ## Volcano plot
 
- - ** Volcano Plot based on P value and F **
+ - **Volcano Plot:** based on P value and FDR
 
 
 ```{r  Volcano plot libraries,fig.width=10, fig.height=10}
