@@ -23,6 +23,8 @@ library(knitr)
 library(DT)
 library(limma)
 library(EnhancedVolcano)
+library(fgsea)
+library(msigdbr)
 
 ```
 
@@ -63,7 +65,7 @@ DT::datatable(round(expr_tpm[1:8, 1:8], 3)) # round to three digits for visualiz
 
 ```
 
-# Data Preparation 
+# 1. Data Preparation 
 
 Preparing expression data (RNA-seq) for analysis:
 
@@ -94,7 +96,7 @@ dim(expr_tpm)
 DT::datatable(round(expr_tpm[1:8, 1:8], 3))
 ```
 
-# Descriptive analysis
+# 2. Descriptive analysis
 
 ## Evaluate Differences in Clinicodemographic and Staging Variables
 
@@ -268,5 +270,78 @@ EnhancedVolcano(top.table,
       'adj p-value & Log FC'),
     title= 'Volcano Plot based on FDR',)
 
+```
+
+# 3. Pathway analysis
+
+- To Identify the associated pathways or genes sets.
+- Downloaded hallmark(H) , KEGG and GO gene sets from [ MSigDB website](https://www.gsea-msigdb.org/gsea/msigdb/human/collections.jsp#H).
+- Conduct GSEA with the fgsea package using "top.table" from step 2.
+
+
+```{r  Create Rank and Bar pot}
+
+# Load human hallmark gene sets from MSigDB
+pathwaysDF <- msigdbr("Homo sapiens", category="H")
+
+# Create a list of gene symbols for each pathway
+pathwaysH <- split(as.character(pathwaysDF$gene_symbol), pathwaysDF$gs_name)
+
+# 1. Create ranks
+
+# Create 'ranks' vector from 'top.table' with logFC as values and gene names as names.
+ranks <- top.table$logFC
+names(ranks) <- top.table$Gene
+
+# Preview the data table of ranks.
+DT::datatable(data.frame(ranks))
+
+
+# 2. Bar Plot
+# Display the ranked fold changes.
+barplot(sort(ranks, decreasing = T))
+```
+
+
+```{r  Pathway analysis, fig.width=10, fig.height=10 }
+# 3. Conduct analysis
+# Run fgsea and fgseaMultilevel with 'pathwaysH' and 'ranks'.
+fgseaRes <- fgsea(pathwaysH, ranks)
+fgseaRes <- fgseaMultilevel(pathways=pathwaysH, stats=ranks)
+
+fgseaResTidy <- fgseaRes %>%
+  as_tibble() %>%
+  arrange(desc(NES)) #order by NES
+
+# Show in a Tidy table.
+fgseaResTidy
+
+# Save fgseaRes as txt file.
+fgseaResTidy$leadingEdge <- sapply(fgseaResTidy$leadingEdge, paste, collapse = ";")
+write.table(fgseaResTidy, "~/BHK lab/kevin Project/Cholangiocarcinoma/output data/fgseaRes_HRanks.txt", sep = "\t", row.names = FALSE, quote = FALSE)
+
+# Mark "significant" if adjusted p-value <= 0.05, else "non-significant".
+fgseaResTidy$adjPvalue <- ifelse(fgseaResTidy$padj <= 0.05, "significant", "non-significant")
+
+# Define colors for significance: grey for non-significant and red for significant results.
+cols <- c("non-significant" = "grey", "significant" = "red")
+
+# Using ggplot: reorder pathways by NES, fill bars based on significance, flip coordinates for readability.
+ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES, fill = adjPvalue)) + geom_col() +
+    scale_fill_manual(values = cols) + coord_flip() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+    labs(x = "Pathway", y = "Normalized Enrichment Score", title = "Hallmark pathways NES
+         Enrichment Score from GSEA")
+
+# 4. GSEA Results Table Plot.
+# Plot GSEA table for significant pathways (padj < 0.05) using a GSEA parameter of 0.5.
+plotGseaTable(pathwaysH[fgseaRes$pathway[fgseaRes$padj < 0.05]], ranks, fgseaRes, gseaParam=0.5)
+```
+
+```{r  Enrichment score plot}
+# 5.  Enrichment score plot.
+# For significant pathways (padj < 0.05).
+
+plotEnrichment(pathwaysH[["HALLMARK_INTERFERON_ALPHA_RESPONSE"]], ranks)
 
 ```
