@@ -307,7 +307,7 @@ barplot(sort(ranks, decreasing = T))
 # 3. Conduct analysis
 # Run fgsea and fgseaMultilevel with 'pathwaysH' and 'ranks'.
 fgseaRes <- fgsea(pathwaysH, ranks)
-fgseaRes <- fgseaMultilevel(pathways=pathwaysH, stats=ranks)
+fgseaRes <- na.omit(fgseaRes)
 
 fgseaResTidy <- fgseaRes %>%
   as_tibble() %>%
@@ -318,7 +318,7 @@ fgseaResTidy
 
 # Save fgseaRes as txt file.
 fgseaResTidy$leadingEdge <- sapply(fgseaResTidy$leadingEdge, paste, collapse = ";")
-write.table(fgseaResTidy, "~/BHK lab/kevin Project/Cholangiocarcinoma/output data/fgseaRes_HRanks.txt", sep = "\t", row.names = FALSE, quote = FALSE)
+write.table(fgseaResTidy, "~/BHK lab/kevin Project/Cholangiocarcinoma/output data/fgseaRes_HRank.txt", sep = "\t", row.names = FALSE, quote = FALSE)
 
 # Mark "significant" if adjusted p-value <= 0.05, else "non-significant".
 fgseaResTidy$adjPvalue <- ifelse(fgseaResTidy$padj <= 0.05, "significant", "non-significant")
@@ -343,5 +343,7 @@ plotGseaTable(pathwaysH[fgseaRes$pathway[fgseaRes$padj < 0.05]], ranks, fgseaRes
 # For significant pathways (padj < 0.05).
 
 plotEnrichment(pathwaysH[["HALLMARK_INTERFERON_ALPHA_RESPONSE"]], ranks)
+
+
 
 ```
