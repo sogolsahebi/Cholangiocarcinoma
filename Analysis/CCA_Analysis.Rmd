@@ -340,9 +340,18 @@ plotGseaTable(pathwaysH[fgseaRes$pathway[fgseaRes$padj < 0.05]], ranks, fgseaRes
 
 ```{r  Enrichment score plot}
 # 5.  Enrichment score plot.
-# For significant pathways (padj < 0.05).
 
-plotEnrichment(pathwaysH[["HALLMARK_INTERFERON_ALPHA_RESPONSE"]], ranks)
+# For significant pathways # 14 pathways.
+
+# Store the list of significant pathways (padj < 0.05).
+significant_pathways <- fgseaRes$pathway[fgseaRes$padj < 0.05]
+
+# # Use a for loop to iterate and plot enrichment for each significant pathway
+for (i in significant_pathways) {
+  enrichment_plot <- plotEnrichment(pathwaysH[[i]], ranks)
+  enrichment_plot <- enrichment_plot + ggtitle(paste("Enrichment Plot for Pathway:",i))
+  print(enrichment_plot)
+}
 
 
 
