@@ -25,6 +25,8 @@ library(limma)
 library(EnhancedVolcano)
 library(fgsea)
 library(msigdbr)
+library(gage)
+library(pathview)
 
 ```
 
@@ -275,9 +277,10 @@ EnhancedVolcano(top.table,
 # 3. Pathway analysis
 
 - To Identify the associated pathways or genes sets.
-- Downloaded hallmark(H) , KEGG and GO gene sets from [ MSigDB website](https://www.gsea-msigdb.org/gsea/msigdb/human/collections.jsp#H).
+- Downloaded hallmark(H) , KEGG gene sets from [ MSigDB website](https://www.gsea-msigdb.org/gsea/msigdb/human/collections.jsp#H).
 - Conduct GSEA with the fgsea package using "top.table" from step 2.
 
+### 1. Hallmark Geneset.
 
 ```{r  Create Rank and Bar pot}
 
@@ -305,7 +308,7 @@ barplot(sort(ranks, decreasing = T))
 
 ```{r  Pathway analysis, fig.width=10, fig.height=10 }
 # 3. Conduct analysis
-# Run fgsea and fgseaMultilevel with 'pathwaysH' and 'ranks'.
+# Run fgsea with 'pathwaysH' and 'ranks'.
 fgseaRes <- fgsea(pathwaysH, ranks)
 fgseaRes <- na.omit(fgseaRes)
 
@@ -338,7 +341,7 @@ ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES, fill = adjPvalue)) + geom_c
 plotGseaTable(pathwaysH[fgseaRes$pathway[fgseaRes$padj < 0.05]], ranks, fgseaRes, gseaParam=0.5)
 ```
 
-```{r  Enrichment score plot}
+```{r  Enrichment score plot }
 # 5.  Enrichment score plot.
 
 # For significant pathways # 14 pathways.
@@ -355,4 +358,52 @@ for (i in significant_pathways) {
 
 
 
+```
+
+### 2. KEGG 
+# KEGG_MEDICUS gene sets from MSigDB
+
+```{r  KEGG plot,fig.width= 13 }
+
+# Load KEGG_MEDICUS pathways.
+pathwaysKEG <- gmtPathways("~/BHK lab/kevin Project/Cholangiocarcinoma/GSEA/c2.cp.kegg_medicus.v2023.2.Hs.symbols.gmt")
+
+fgseaRes_keg <- fgsea(pathwaysKEG, ranks)
+
+fgseaResTidy_keg <- fgseaRes_keg %>%
+  as_tibble() %>%
+  arrange(desc(NES)) #order by NES
+
+# Show in a Tidy table of keg.
+fgseaResTidy_keg
+
+# Save fgseaRes_keg as txt file.
+fgseaResTidy_keg$leadingEdge <- sapply(fgseaResTidy_keg$leadingEdge, paste, collapse = ";")
+write.table(fgseaResTidy_keg, "~/BHK lab/kevin Project/Cholangiocarcinoma/output data/fgseaRes_kegRank.txt", sep = "\t", row.names = FALSE, quote = FALSE)
+ 
+
+```
+
+```{r KEGG plot ,fig.width= 12.5 , fig.height= 7 }
+
+# Mark "significant" if adjusted p-value <= 0.05, else "non-significant".
+fgseaResTidy_keg$adjPvalue <- ifelse(fgseaResTidy_keg$padj <= 0.05, "significant", "non-significant")
+
+
+# Create a ggplot of significant pathways, with bars colored based on adjusted p-value significance.
+ggplot(fgseaResTidy_keg[fgseaResTidy_keg$padj < 0.05, ], aes(reorder(pathway, NES), NES, fill = adjPvalue)) + 
+  geom_col() + 
+  scale_fill_manual(values = cols) + 
+  coord_flip() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(x = "Pathway", y = "Normalized Enrichment Score", title = "KEGG pathways NES Enrichment Score from GSEA")
+
+
+# Plot significant pathways as points with a gradient color based on p-value and size based on a 'size' variable.
+ggplot(fgseaResTidy_keg[fgseaResTidy_keg$padj < 0.05, ], aes(y=reorder(pathway, size),x= NES)) + geom_point(aes(color=padj,size=size)) + 
+  scale_color_gradientn(colours = c("red","blue")) + 
+  labs(x='Normalized Enrichment Score', y=NULL ) + 
+  theme( axis.title = element_text(face='bold'), axis.text = element_text (face='bold') )
+
+```
 ```
