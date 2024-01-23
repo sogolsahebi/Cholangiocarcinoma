@@ -426,7 +426,7 @@ ggplot(fgseaResTidy_kegg[fgseaResTidy_kegg$padj < 0.05, ], aes(y=reorder(pathway
 ```{r  KEGG legacy,fig.width= 13 }
 
 # Load KEGG_MEDICUS pathways.
-pathwaysKEG <- gmtPathways("~/BHK lab/kevin Project/Cholangiocarcinoma/GSEA/c2.cp.kegg_legacy.v2023.2.Hs.symbols.gmt")
+pathwaysKEG_LEG <- gmtPathways("~/BHK lab/kevin Project/Cholangiocarcinoma/GSEA/c2.cp.kegg_legacy.v2023.2.Hs.symbols.gmt")
 
 # Perform fgsea with KEGG pathways
 fgseaRes_kegg <- fgsea(pathwaysKEG, ranks)
@@ -470,3 +470,45 @@ ggplot(fgseaResTidy_kegg[fgseaResTidy_kegg$padj < 0.05, ], aes(y=reorder(pathway
   theme( axis.title = element_text(face='bold'), axis.text = element_text (face='bold') )
 
 ```
+
+### Over-Representation Analysis analysis (ORA)
+
+using fgsea package 
+
+```{r  ORA legacy }
+
+# ORA with fgsea
+
+# we use 'top.table' from the differential expression analysis
+# contains the list of genes of interest
+
+# Set a vector of differentially expressed genes for ORA
+de_genes <- rownames(top.table)[top.table$adj.P.Val < 0.05]  # genes with an adj p-value less than 0.05
+
+# Defining the gene universe as all genes considered in the analysis
+gene_universe <- rownames(expr_tpm)
+
+## Performing ORA
+
+# ORA for Hallmark pathways
+ora_results_hallmark <- fora(pathways = pathwaysH, genes = de_genes, universe = gene_universe, minSize = 15, maxSize = 500)
+ora_results_hallmark$Pathway_Set <- "Hallmark"
+ora_results_hallmark$Significance <- ifelse(ora_results_hallmark$padj < 0.05, "Significant", "Not Significant")
+
+# ORA for KEGG_MEDICUS pathways
+ora_results_kegg_medicus <- fora(pathways = pathwaysKEG, genes = de_genes, universe = gene_universe, minSize = 15, maxSize = 500)
+ora_results_kegg_medicus$Pathway_Set <- "KEGG_MEDICUS"
+ora_results_kegg_medicus$Significance <- ifelse(ora_results_kegg_medicus$padj < 0.05, "Significant", "Not Significant")
+
+# ORA for KEGG_LEGACY pathways
+ora_results_kegg_legacy <- fora(pathways = pathwaysKEG_LEG, genes = de_genes, universe = gene_universe, minSize = 15, maxSize = 500)
+ora_results_kegg_legacy$Pathway_Set <- "KEGG_LEGACY"
+ora_results_kegg_legacy$Significance <- ifelse(ora_results_kegg_legacy$padj < 0.05, "Significant", "Not Significant")
+
+# Display the top results for each pathway set
+head(ora_results_hallmark)
+head(ora_results_kegg_medicus)
+head(ora_results_kegg_legacy)
+
+```
+
