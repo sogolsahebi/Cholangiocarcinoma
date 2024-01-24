@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
 
-# Load Libraries
+## Load Libraries
 
 ```{r  load libraries}
 
@@ -27,11 +27,12 @@ library(fgsea)
 library(msigdbr)
 library(gage)
 library(pathview)
+library(UpSetR)
 
 ```
 
 
-# Data Loading and Preparation
+## Data Loading and Preparation
 
 #### Data Overview
 
@@ -61,11 +62,11 @@ expr_tpm <- assays(se)[["expr_tpm"]] #dim 38040 x 33
 annot <- data.frame(rowData(se))  #dim is 38040 x 11
 
 # Display first few rows of the dataset
-DT::datatable(round(expr_tpm[1:8, 1:8], 3)) 
+DT::datatable(round(expr_tpm[1:8, 1:7], 3)) 
 
 ```
 
-# Data Preparation 
+## Data Preparation 
 
 Preparing expression data (RNA-seq) for analysis:
 
@@ -95,9 +96,9 @@ expr_tpm <- expr_tpm[-remove, ]   #dim is 16256 x 33
 DT::datatable(round(expr_tpm[1:8, 1:8], 3))
 ```
 
-# Descriptive analysis
+## Descriptive analysis
 
-## Evaluate Differences in Clinicodemographic and Staging Variables
+### Evaluate Differences in Clinicodemographic and Staging Variables
 
 - **Continuous Variables (e.g., Age):** Calculated the median and IQR and assessed associations using the Wilcoxon test. 
 
@@ -203,7 +204,7 @@ table_html
 ```
 
 
-# Differential gene expression.
+## Differential gene expression.
 
   - **Use limma approach in R **: To find the differentially expressed genes between Autoimmune and Non-Autoimmune.
   - **P-values are corrected to control false discovery rate (FDR)** using Benjamini-Hochberg approach 
@@ -235,7 +236,6 @@ write.table(top.table, file = "~/BHK lab/kevin Project/Cholangiocarcinoma/output
 ## Volcano plot
 
  - **Volcano Plot:** based on P value and FDR
-
 
 ```{r  Volcano plot libraries,fig.width=10, fig.height=10}
 
@@ -270,7 +270,7 @@ EnhancedVolcano(top.table,
 
 ```
 
-# MSigDB Pathway analysis
+## MSigDB Pathway analysis
 
 - To Identify the associated pathways or genes sets.
 - Downloaded hallmark(H) , KEGG gene sets from [ MSigDB website](https://www.gsea-msigdb.org/gsea/msigdb/human/collections.jsp#H).
@@ -369,7 +369,7 @@ ggplot(fgseaResTidy[fgseaResTidy$padj < 0.05, ], aes(y=reorder(pathway, size),x=
 
 To do KEGG pathway analysis, both KEGG_MEDICUS and KEGG_LEGACY are downloaded. The cutoff of 0.05 is applied for visualization, while the text files include the results across all gene sets.
 
-### KEGG_MEDICUS 
+## KEGG_MEDICUS 
 
 186 canonical pathways gene sets derived from the KEGG MEDICUS pathway database.
 
@@ -398,7 +398,7 @@ write.table(fgseaResTidy_kegg, "~/BHK lab/kevin Project/Cholangiocarcinoma/outpu
 
 ```
 
-```{r KEGG plot ,fig.width= 12.5 , fig.height= 6 }
+```{r KEGG plot ,fig.width= 12 , fig.height= 6 }
 
 # Mark "significant" if adjusted p-value <= 0.05, else "non-significant".
 fgseaResTidy_kegg$adjPvalue <- ifelse(fgseaResTidy_kegg$padj <= 0.05, "significant", "non-significant")
@@ -419,7 +419,7 @@ ggplot(fgseaResTidy_kegg[fgseaResTidy_kegg$padj < 0.05, ], aes(y=reorder(pathway
   theme( axis.title = element_text(face='bold'), axis.text = element_text (face='bold') )
 
 ```
-### KEGG_LEGACY
+## KEGG_LEGACY
 
 186 canonical pathways gene sets derived from the KEGG pathway database. These are considered Legacy gene sets since the introduction of the gene sets based on the more recent KEGG MEDICUS data. 
 
@@ -448,7 +448,7 @@ write.table(fgseaResTidy_kegg, "~/BHK lab/kevin Project/Cholangiocarcinoma/outpu
 ```
 
 
-```{r KEGG legacy plot,fig.width= 7 , fig.height= 4 }
+```{r KEGG legacy plot,fig.width= 12 , fig.height= 6 }
 
 # Mark "significant" if adjusted p-value <= 0.05, else "non-significant".
 fgseaResTidy_kegg$adjPvalue <- ifelse(fgseaResTidy_kegg$padj <= 0.05, "significant", "non-significant")
@@ -471,44 +471,114 @@ ggplot(fgseaResTidy_kegg[fgseaResTidy_kegg$padj < 0.05, ], aes(y=reorder(pathway
 
 ```
 
-### Over-Representation Analysis analysis (ORA)
+## Over-Representation Analysis analysis (ORA)
 
-using fgsea package 
+To identifies whether certain gene sets are over-represented in a target gene group.
 
 ```{r  ORA legacy }
 
-# ORA with fgsea
-
-# we use 'top.table' from the differential expression analysis
-# contains the list of genes of interest
-
 # Set a vector of differentially expressed genes for ORA
-de_genes <- rownames(top.table)[top.table$adj.P.Val < 0.05]  # genes with an adj p-value less than 0.05
+deGenes <- rownames(top.table)[top.table$adj.P.Val < 0.05]  # 460 genes
 
 # Defining the gene universe as all genes considered in the analysis
-gene_universe <- rownames(expr_tpm)
+geneUniverse <- rownames(expr_tpm)
 
 ## Performing ORA
 
 # ORA for Hallmark pathways
-ora_results_hallmark <- fora(pathways = pathwaysH, genes = de_genes, universe = gene_universe, minSize = 15, maxSize = 500)
-ora_results_hallmark$Pathway_Set <- "Hallmark"
-ora_results_hallmark$Significance <- ifelse(ora_results_hallmark$padj < 0.05, "Significant", "Not Significant")
+oraHallmark <- fora(pathways = pathwaysH, genes = deGenes, universe = geneUniverse, minSize = 15, maxSize = 500)
+oraHallmark$Pathway_Set <- "Hallmark"
+oraHallmark$Significance <- ifelse(oraHallmark$padj < 0.05, "Significant", "Not Significant")
 
 # ORA for KEGG_MEDICUS pathways
-ora_results_kegg_medicus <- fora(pathways = pathwaysKEG, genes = de_genes, universe = gene_universe, minSize = 15, maxSize = 500)
-ora_results_kegg_medicus$Pathway_Set <- "KEGG_MEDICUS"
-ora_results_kegg_medicus$Significance <- ifelse(ora_results_kegg_medicus$padj < 0.05, "Significant", "Not Significant")
+oraKeggMed <- fora(pathways = pathwaysKEG, genes = deGenes, universe = geneUniverse, minSize = 15, maxSize = 500)
+oraKeggMed$Pathway_Set <- "KEGG_MEDICUS"
+oraKeggMed$Significance <- ifelse(oraKeggMed$padj < 0.05, "Significant", "Not Significant")
 
 # ORA for KEGG_LEGACY pathways
-ora_results_kegg_legacy <- fora(pathways = pathwaysKEG_LEG, genes = de_genes, universe = gene_universe, minSize = 15, maxSize = 500)
-ora_results_kegg_legacy$Pathway_Set <- "KEGG_LEGACY"
-ora_results_kegg_legacy$Significance <- ifelse(ora_results_kegg_legacy$padj < 0.05, "Significant", "Not Significant")
+oraKeggLeg <- fora(pathways = pathwaysKEG_LEG, genes = deGenes, universe = geneUniverse, minSize = 15, maxSize = 500)
+oraKeggLeg$Pathway_Set <- "KEGG_LEGACY"
+oraKeggLeg$Significance <- ifelse(oraKeggLeg$padj < 0.05, "Significant", "Not Significant")
 
 # Display the top results for each pathway set
-head(ora_results_hallmark)
-head(ora_results_kegg_medicus)
-head(ora_results_kegg_legacy)
+# DT::datatable(head(oraHallmark, 
+#               options = list(scrollX = TRUE, scrollY = TRUE, pageLength = 4, autoWidth = TRUE))
+DT::datatable(oraHallmark)
+DT::datatable(oraKeggMed)
+DT::datatable(oraKeggLeg)
+
+# Save the data frame as an RDS file
+saveRDS(oraHallmark, file = "~/BHK lab/kevin Project/Cholangiocarcinoma/output data/oraHallmark.rds")
+saveRDS(oraKeggMed, file = "~/BHK lab/kevin Project/Cholangiocarcinoma/output data/oraKeggMed.rds")
+saveRDS(oraKeggLeg, file = "~/BHK lab/kevin Project/Cholangiocarcinoma/output data/oraKeggLeg.rds")
+
 
 ```
 
+### Visulize ORA 
+- Heatmap 
+_ UPset plot
+
+```{r OraHallmark,fig.width= 14 , fig.height=10}
+
+# oraHallmark
+# Create an enrichment heatmap
+ggplot(oraHallmark, aes(x = pathway, y = reorder(pathway, padj), fill = -log10(padj))) +
+  geom_tile() +
+  scale_fill_gradientn(colors = c("blue", "yellow", "red"), na.value = "grey50", trans = "reverse") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(fill = "-log10(p-adj)", x = "Pathway", y = "") +
+  ggtitle("Enrichment Heatmap of Top Pathways")
+
+
+```
+
+```{r ORA keggleg ,fig.width= 14 , fig.height=10}
+
+#ORA Kegg
+
+# Create an enrichment heatmap
+ggplot(oraKeggLeg[1:50, 1:8], aes(x = pathway, y = reorder(pathway, padj), fill = -log10(padj))) +
+  geom_tile() +
+  scale_fill_gradientn(colors = c("blue", "yellow", "red"), na.value = "grey50", trans = "reverse") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(fill = "-log10(p-adj)", x = "Pathway", y = "") +
+  ggtitle("Enrichment Heatmap of Top Pathways")
+
+
+```
+
+
+```{r orakeggmed ,fig.width= 20 , fig.height=17}
+
+# Create an enrichment heatmap
+ggplot(oraKeggMed[1:50, 1:8], aes(x = pathway, y = reorder(pathway, padj), fill = -log10(padj))) +
+  geom_tile() +
+  scale_fill_gradientn(colors = c("blue", "yellow", "red"), na.value = "grey50", trans = "reverse") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(fill = "-log10(p-adj)", x = "Pathway", y = "") +
+  ggtitle("Enrichment Heatmap of Top Pathways")
+
+```
+
+```{r upset plot legacy}
+
+# Create example data
+set1 <- oraHallmark$pathway
+set2 <- oraKeggMed$pathway
+set3 <- oraKeggLeg$pathway
+
+# Create a list of sets
+sets_list <- list(
+  oraHallmark = set1,
+  oraKeggMed = set2,
+  oraKeggLeg = set3
+)
+
+# Create an UpSet plot
+upset(fromList(sets_list), main.bar.color = "lightblue", sets.bar.color = "lightblue")
+
+```
